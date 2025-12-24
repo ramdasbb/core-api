@@ -1,0 +1,21 @@
+/target/
+**/target/
+*.log
+*.class
+/.idea/
+/.vscode/
+*.iml
+/.mvn/
+.settings/
+.DS_Store
+
+# Eclipse/IntelliJ
+*.ipr
+*.iws
+
+# Maven
+dependency-reduced-pom.xml
+release.properties
+
+# OS files
+Thumbs.db
