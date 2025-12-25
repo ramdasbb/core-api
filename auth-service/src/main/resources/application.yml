@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/smartvillage
-    username: postgres
-    password: admin
+    url: jdbc:postgresql://dpg-d56pig3uibrs739ortb0-a.virginia-postgres.render.com:5432/smartvillage?sslmode=require
+    username: admin
+    password: tavr5ygVVblWuxjPbcO7vxoUZgt9q6aC
   jpa:
     hibernate:
       ddl-auto: validate
@@ -19,8 +19,8 @@ server:
   port: 8081
 
 jwt:
-  secret: your-256-bit-secret-key-change-this-in-production-environment-must-be-at-least-32-chars
-  expiration-ms: 900000  # 15 minutes
+  secret: thisismysecretkeyforjwttokengeneration1234
+  expiration-ms: 604800000  # 7 days
   refresh-expiration-ms: 604800000  # 7 days
 
 springdoc:
