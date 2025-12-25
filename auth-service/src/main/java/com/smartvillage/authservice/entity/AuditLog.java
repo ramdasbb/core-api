@@ -2,6 +2,8 @@ package com.smartvillage.authservice.entity;
 
 import jakarta.persistence.*;
 import com.fasterxml.jackson.databind.JsonNode;
+import org.hibernate.annotations.Type;
+import io.hypersistence.utils.hibernate.type.json.JsonType;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -32,6 +34,7 @@ public class AuditLog {
     private String resourceId;
 
     @Column(columnDefinition = "jsonb")
+    @Type(JsonType.class)
     private String changes;
 
     @Column

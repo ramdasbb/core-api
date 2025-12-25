@@ -8,12 +8,14 @@ import org.springframework.transaction.annotation.Transactional;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 @Transactional
 public class AuditService {
     
     private final AuditLogRepository auditLogRepository;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public AuditService(AuditLogRepository auditLogRepository) {
         this.auditLogRepository = auditLogRepository;
@@ -25,7 +27,24 @@ public class AuditService {
         log.setAction(action);
         log.setResourceType(resourceType);
         log.setResourceId(resourceId);
-        log.setChanges(changes);
+        
+        // Convert changes to valid JSON format
+        if (changes != null) {
+            try {
+                // Check if it's already valid JSON
+                objectMapper.readTree(changes);
+                log.setChanges(changes);
+            } catch (Exception e) {
+                // If not valid JSON, wrap it as a JSON string
+                try {
+                    log.setChanges(objectMapper.writeValueAsString(changes));
+                } catch (Exception ex) {
+                    // Fallback: set as null if serialization fails
+                    log.setChanges(null);
+                }
+            }
+        }
+        
         log.setStatus("success");
         
         // Try to get IP and User-Agent from request context

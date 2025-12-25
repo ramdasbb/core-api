@@ -64,6 +64,12 @@
       <artifactId>flyway-database-postgresql</artifactId>
       <version>10.8.1</version>
     </dependency>
+    <!-- Hypersistence Utils for JSONB support -->
+    <dependency>
+      <groupId>io.hypersistence</groupId>
+      <artifactId>hypersistence-utils-hibernate-63</artifactId>
+      <version>3.7.0</version>
+    </dependency>
     <!-- Springdoc OpenAPI -->
     <dependency>
       <groupId>org.springdoc</groupId>
