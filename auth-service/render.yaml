@@ -23,7 +23,8 @@ services:
     name: auth-service
     env: docker
     repo: https://github.com/your-org/lokseva.git
-    dockerfilePath: core_api/auth-service/Dockerfile
+    rootDir: core_api
+    dockerfilePath: Dockerfile
     plan: starter
     region: ohio
     envVars:
