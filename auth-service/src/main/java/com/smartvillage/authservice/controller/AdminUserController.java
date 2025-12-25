@@ -7,6 +7,13 @@ import com.smartvillage.authservice.security.JwtUtil;
 import com.smartvillage.authservice.service.AuditService;
 import com.smartvillage.authservice.service.RBACService;
 import com.smartvillage.authservice.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -20,6 +27,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/v1/admin/users")
 @CrossOrigin(origins = "*", maxAge = 3600)
+@Tag(name = "Admin Users", description = "Admin user management endpoints for approval, rejection, and user listing")
 public class AdminUserController {
 
     private final UserService userService;
@@ -39,11 +47,13 @@ public class AdminUserController {
      * GET /admin/users - List users with filters
      */
     @GetMapping
+    @Operation(summary = "List Users", description = "List all active users with pagination and optional approval status filter")
+    @SecurityRequirement(name = "Bearer Authentication")
     public ResponseEntity<ApiResponse<?>> listUsers(
             @RequestHeader("Authorization") String authHeader,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int limit,
-            @RequestParam(required = false) String approval_status) {
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "limit", defaultValue = "20") int limit,
+            @RequestParam(name = "approval_status", required = false) String approval_status) {
         try {
             // Validate token and check permission
             if (!validateAndCheckPermission(authHeader, "users:view")) {
@@ -53,17 +63,29 @@ public class AdminUserController {
             }
 
             Pageable pageable = PageRequest.of(page, limit);
+            Page<User> usersPage;
+            
+            // Filter by approval status if provided
+            if (approval_status != null && !approval_status.isEmpty()) {
+                usersPage = userService.findByApprovalStatus(approval_status, pageable);
+            } else {
+                usersPage = userService.findAllActive(pageable);
+            }
+            
+            // Build user list response
+            List<Map<String, Object>> usersList = usersPage.getContent().stream()
+                    .map(this::buildUserResponse)
+                    .collect(Collectors.toList());
             
             Map<String, Object> response = new LinkedHashMap<>();
-            // Note: You'd need to implement pagination in UserRepository
-            // For now, returning all active users
-            
-            response.put("users", new ArrayList<>());
+            response.put("users", usersList);
             response.put("pagination", new LinkedHashMap<String, Object>() {{
                 put("page", page);
                 put("limit", limit);
-                put("total", 0);
-                put("total_pages", 0);
+                put("total", usersPage.getTotalElements());
+                put("total_pages", usersPage.getTotalPages());
+                put("has_next", usersPage.hasNext());
+                put("has_previous", usersPage.hasPrevious());
             }});
 
             return ResponseEntity.ok(
@@ -81,6 +103,8 @@ public class AdminUserController {
      * GET /admin/users/{userId} - Get user details
      */
     @GetMapping("/{userId}")
+    @Operation(summary = "Get User Details", description = "Retrieve details of a specific user by ID")
+    @SecurityRequirement(name = "Bearer Authentication")
     public ResponseEntity<ApiResponse<?>> getUserDetails(
             @RequestHeader("Authorization") String authHeader,
             @PathVariable String userId) {
@@ -114,13 +138,37 @@ public class AdminUserController {
     }
 
     /**
-     * POST /admin/users/{userId}/approve - Approve user
+     * GET /admin/users/{userId}/approve - Approve a pending user
      */
-    @PostMapping("/{userId}/approve")
+    @GetMapping("/{userId}/approve")
+    @Operation(
+        summary = "Approve User",
+        description = "Approve a pending user by their ID. Requires 'users:approve' permission. No request body needed."
+    )
+    @SecurityRequirement(name = "Bearer Authentication")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200", 
+            description = "User approved successfully"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "403", 
+            description = "Permission denied - user lacks 'users:approve' permission"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "404", 
+            description = "User not found"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "500", 
+            description = "Internal server error"
+        )
+    })
     public ResponseEntity<ApiResponse<?>> approveUser(
             @RequestHeader("Authorization") String authHeader,
-            @PathVariable String userId,
-            @RequestBody Map<String, String> request) {
+            @PathVariable(name = "userId") 
+            @Parameter(description = "UUID of the user to approve", example = "33d56a2e-ae9d-43b5-8a86-788378d12d2c")
+            String userId) {
         try {
             // Validate token and check permission
             String authUserId = validateAndGetUserId(authHeader);
@@ -149,13 +197,40 @@ public class AdminUserController {
     }
 
     /**
-     * POST /admin/users/{userId}/reject - Reject user
+     * GET /admin/users/{userId}/reject - Reject a pending user
      */
-    @PostMapping("/{userId}/reject")
+    @GetMapping("/{userId}/reject")
+    @Operation(
+        summary = "Reject User",
+        description = "Reject a pending user by their ID with optional rejection reason as query parameter. Requires 'users:reject' permission."
+    )
+    @SecurityRequirement(name = "Bearer Authentication")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200", 
+            description = "User rejected successfully"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "403", 
+            description = "Permission denied - user lacks 'users:reject' permission"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "404", 
+            description = "User not found"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "500", 
+            description = "Internal server error"
+        )
+    })
     public ResponseEntity<ApiResponse<?>> rejectUser(
             @RequestHeader("Authorization") String authHeader,
-            @PathVariable String userId,
-            @RequestBody Map<String, String> request) {
+            @PathVariable(name = "userId")
+            @Parameter(description = "UUID of the user to reject", example = "33d56a2e-ae9d-43b5-8a86-788378d12d2c")
+            String userId,
+            @RequestParam(name = "reason", required = false)
+            @Parameter(description = "Rejection reason (optional)", example = "Documents not verified")
+            String rejectionReason) {
         try {
             // Validate token and check permission
             if (!validateAndCheckPermission(authHeader, "users:reject")) {
@@ -164,7 +239,6 @@ public class AdminUserController {
                 );
             }
 
-            String rejectionReason = request.get("rejection_reason");
             User rejectedUser = userService.rejectUser(UUID.fromString(userId), rejectionReason);
             Map<String, Object> userData = buildUserResponse(rejectedUser);
 
@@ -187,6 +261,8 @@ public class AdminUserController {
      * DELETE /admin/users/{userId} - Soft delete user
      */
     @DeleteMapping("/{userId}")
+    @Operation(summary = "Delete User", description = "Soft delete a user by marking as inactive")
+    @SecurityRequirement(name = "Bearer Authentication")
     public ResponseEntity<ApiResponse<?>> deleteUser(
             @RequestHeader("Authorization") String authHeader,
             @PathVariable String userId) {

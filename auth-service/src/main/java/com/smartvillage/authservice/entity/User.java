@@ -59,6 +59,13 @@ public class User {
     )
     private Set<Role> roles = new HashSet<>();
 
+    // Password reset fields
+    @Column(name = "reset_password_token", length = 128)
+    private String resetPasswordToken;
+
+    @Column(name = "reset_password_expiry")
+    private Instant resetPasswordExpiry;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
@@ -120,4 +127,8 @@ public class User {
 
     public Instant getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
+    public String getResetPasswordToken() { return resetPasswordToken; }
+    public void setResetPasswordToken(String resetPasswordToken) { this.resetPasswordToken = resetPasswordToken; }
+    public Instant getResetPasswordExpiry() { return resetPasswordExpiry; }
+    public void setResetPasswordExpiry(Instant resetPasswordExpiry) { this.resetPasswordExpiry = resetPasswordExpiry; }
 }

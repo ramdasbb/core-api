@@ -5,6 +5,9 @@ import com.smartvillage.authservice.entity.User;
 import com.smartvillage.authservice.entity.Role;
 import com.smartvillage.authservice.repository.UserRepository;
 import com.smartvillage.authservice.repository.RoleRepository;
+import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -76,6 +79,13 @@ public class UserService {
         return userRepository.findByEmail(email.trim().toLowerCase());
     }
 
+    public Optional<User> findByResetPasswordToken(String token) {
+        return userRepository.findAll().stream().filter(u -> token.equals(u.getResetPasswordToken())).findFirst();
+    }
+
+    public User save(User user) {
+        return userRepository.save(user);
+
     public Optional<User> findById(UUID userId) {
         return userRepository.findById(userId);
     }
@@ -135,5 +145,13 @@ public class UserService {
         user.setRoles(roles);
         userRepository.save(user);
         auditService.logAction(null, "rbac:user-roles-assign", "user", userId.toString(), null);
+    }
+
+    public Page<User> findByApprovalStatus(String status, Pageable pageable) {
+        return userRepository.findByApprovalStatus(status, pageable);
+    }
+
+    public Page<User> findAllActive(Pageable pageable) {
+        return userRepository.findAllActive(pageable);
     }
 }

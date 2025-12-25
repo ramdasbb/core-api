@@ -15,6 +15,8 @@ import java.util.UUID;
 public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<User> findByEmail(String email);
 
+    Optional<User> findByResetPasswordToken(String resetPasswordToken);
+
     @Query("SELECT u FROM User u WHERE u.approvalStatus = :status AND u.isActive = true")
     Page<User> findByApprovalStatus(@Param("status") String status, Pageable pageable);
 

@@ -17,7 +17,7 @@ public class JwtUtil {
     @Value("${jwt.secret:your-256-bit-secret-key-change-this-in-production-environment-must-be-at-least-32-chars}")
     private String jwtSecret;
 
-    @Value("${jwt.expiration-ms:900000}")  // 15 minutes
+    @Value("${jwt.expiration-ms:604800000}")  // 7 days
     private long jwtExpirationMs;
 
     @Value("${jwt.refresh-expiration-ms:604800000}")  // 7 days
@@ -33,13 +33,11 @@ public class JwtUtil {
         byte[] keyBytes;
         if (secret.length() < 32) {
             // Pad the secret to at least 32 bytes if too short
-            keyBytes = java.util.Base64.getEncoder().encode(
-                (secret + "0".repeat(Math.max(0, 32 - secret.length()))).getBytes()
-            );
-        } else {
-            keyBytes = java.util.Base64.getEncoder().encode(secret.getBytes());
+            secret = secret + "0".repeat(Math.max(0, 32 - secret.length()));
         }
         
+        // Use the secret bytes directly without Base64 encoding
+        keyBytes = secret.getBytes();
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
@@ -78,12 +76,31 @@ public class JwtUtil {
 
     public boolean validateToken(String token) {
         try {
+            if (token == null || token.trim().isEmpty()) {
+                return false;
+            }
             Jwts.parserBuilder()
                     .setSigningKey(getSigningKey())
                     .build()
                     .parseClaimsJws(token);
             return true;
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            System.err.println("Token expired: " + e.getMessage());
+            return false;
+        } catch (io.jsonwebtoken.UnsupportedJwtException e) {
+            System.err.println("Unsupported JWT: " + e.getMessage());
+            return false;
+        } catch (io.jsonwebtoken.MalformedJwtException e) {
+            System.err.println("Malformed JWT: " + e.getMessage());
+            return false;
+        } catch (io.jsonwebtoken.SignatureException e) {
+            System.err.println("Invalid signature: " + e.getMessage());
+            return false;
+        } catch (IllegalArgumentException e) {
+            System.err.println("JWT claims string is empty: " + e.getMessage());
+            return false;
         } catch (Exception e) {
+            System.err.println("Token validation failed: " + e.getMessage());
             return false;
         }
     }
