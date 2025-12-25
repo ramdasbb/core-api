@@ -53,6 +53,19 @@ public class AuthController {
     }
 
     /**
+     * GET /auth/health - Health check endpoint (no authentication required)
+     */
+    @GetMapping("/health")
+    @Operation(summary = "Health check", description = "Service health status endpoint")
+    public ResponseEntity<Map<String, Object>> health() {
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", "UP");
+        response.put("service", "auth-service");
+        response.put("timestamp", System.currentTimeMillis());
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * POST /auth/request-password-reset - Request password reset (send token)
      */
     @PostMapping("/request-password-reset")
