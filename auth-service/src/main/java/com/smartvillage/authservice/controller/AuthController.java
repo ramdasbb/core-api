@@ -105,6 +105,8 @@ public class AuthController {
         userService.save(user);
         return ResponseEntity.ok(new ApiResponse<>(true, "Password reset successful", null));
     }
+
+    /**
      * POST /auth/signup - Register new user
      */
     @PostMapping("/signup")
