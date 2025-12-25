@@ -3,10 +3,10 @@ FROM maven:3.9.4-eclipse-temurin-21 as builder
 
 WORKDIR /app
 
-# Copy entire core_api directory
+# Copy entire core_api
 COPY . .
 
-# Build auth-service module
+# Build auth-service module only
 RUN mvn clean package -DskipTests -pl auth-service -am
 
 # Runtime stage
@@ -14,8 +14,8 @@ FROM eclipse-temurin:21-jre-jammy
 
 WORKDIR /app
 
-# Copy JAR from builder
-COPY --from=builder /app/auth-service/target/*-SNAPSHOT.jar auth-service.jar
+# Copy JAR from builder - match actual artifact name pattern
+COPY --from=builder /app/auth-service/target/auth-service-*.jar auth-service.jar
 
 EXPOSE 8001
 
