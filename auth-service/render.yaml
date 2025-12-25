@@ -1,0 +1,67 @@
+services:
+  # PostgreSQL Database Service
+  - type: pserv
+    name: smartvillage-postgres
+    env: docker
+    repo: https://github.com/your-org/lokseva.git
+    dockerfilePath: Dockerfile.postgres
+    plan: starter
+    region: ohio
+    envVars:
+      - key: POSTGRES_DB
+        value: smartvillage
+      - key: POSTGRES_USER
+        value: postgres
+      - key: POSTGRES_PASSWORD
+        generateValue: true
+    volumes:
+      - name: postgres_data
+        mountPath: /var/lib/postgresql/data
+
+  # Auth Service
+  - type: web
+    name: auth-service
+    env: docker
+    repo: https://github.com/your-org/lokseva.git
+    dockerfilePath: core_api/auth-service/Dockerfile
+    plan: starter
+    region: ohio
+    envVars:
+      - key: SPRING_DATASOURCE_URL
+        value: postgresql://smartvillage-postgres:5432/smartvillage
+      - key: SPRING_DATASOURCE_USERNAME
+        value: postgres
+      - key: SPRING_DATASOURCE_PASSWORD
+        fromService:
+          type: pserv
+          name: smartvillage-postgres
+          property: env.POSTGRES_PASSWORD
+      - key: JWT_SECRET
+        generateValue: true
+        sync: false
+      - key: SPRING_ENVIRONMENT
+        value: production
+      - key: SPRING_JPA_HIBERNATE_DDL_AUTO
+        value: validate
+      - key: SPRING_FLYWAY_ENABLED
+        value: "true"
+      - key: SERVER_PORT
+        value: 8001
+      - key: MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE
+        value: health,info,metrics
+    healthCheckPath: /api/v1/health
+    healthCheckInterval: 30
+    scaling:
+      minInstances: 1
+      maxInstances: 3
+      targetMemoryPercent: 75
+    timeout: 30
+    buildFilter:
+      paths:
+        - core_api/auth-service/
+
+databases:
+  - name: smartvillage-postgres
+    database: smartvillage
+    user: postgres
+    ipAllowList: []

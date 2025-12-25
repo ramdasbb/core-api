@@ -9,7 +9,7 @@ spring:
     show-sql: true
 
 server:
-  port: 8082
+  port: 8086
 
 springdoc:
   api-docs:
